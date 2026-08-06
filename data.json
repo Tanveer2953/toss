@@ -1,114 +1,13 @@
 {
-  "total": 601,
-  "heads": 274,
-  "tails": 327,
+  "total": 0,
+  "heads": 0,
+  "tails": 0,
   "currentStreak": {
-    "type": "H",
-    "count": 1
+    "type": null,
+    "count": 0
   },
-  "maxHeadsStreak": 8,
-  "maxTailsStreak": 10,
-  "last_toss_timestamp": 1786013855,
-  "history": [
-    {
-      "id": 601,
-      "result": "H",
-      "timestamp": "10:57:08 UTC"
-    },
-    {
-      "id": 600,
-      "result": "T",
-      "timestamp": "10:57:07 UTC"
-    },
-    {
-      "id": 599,
-      "result": "T",
-      "timestamp": "10:57:06 UTC"
-    },
-    {
-      "id": 598,
-      "result": "H",
-      "timestamp": "10:57:05 UTC"
-    },
-    {
-      "id": 597,
-      "result": "T",
-      "timestamp": "10:57:04 UTC"
-    },
-    {
-      "id": 596,
-      "result": "H",
-      "timestamp": "10:57:03 UTC"
-    },
-    {
-      "id": 595,
-      "result": "T",
-      "timestamp": "10:57:02 UTC"
-    },
-    {
-      "id": 594,
-      "result": "H",
-      "timestamp": "10:57:01 UTC"
-    },
-    {
-      "id": 593,
-      "result": "H",
-      "timestamp": "10:57:00 UTC"
-    },
-    {
-      "id": 592,
-      "result": "T",
-      "timestamp": "10:56:59 UTC"
-    },
-    {
-      "id": 591,
-      "result": "H",
-      "timestamp": "10:56:58 UTC"
-    },
-    {
-      "id": 590,
-      "result": "T",
-      "timestamp": "10:56:57 UTC"
-    },
-    {
-      "id": 589,
-      "result": "H",
-      "timestamp": "10:56:56 UTC"
-    },
-    {
-      "id": 588,
-      "result": "H",
-      "timestamp": "10:56:55 UTC"
-    },
-    {
-      "id": 587,
-      "result": "H",
-      "timestamp": "10:56:54 UTC"
-    },
-    {
-      "id": 586,
-      "result": "H",
-      "timestamp": "10:56:53 UTC"
-    },
-    {
-      "id": 585,
-      "result": "H",
-      "timestamp": "10:56:52 UTC"
-    },
-    {
-      "id": 584,
-      "result": "T",
-      "timestamp": "10:56:51 UTC"
-    },
-    {
-      "id": 583,
-      "result": "T",
-      "timestamp": "10:56:50 UTC"
-    },
-    {
-      "id": 582,
-      "result": "T",
-      "timestamp": "10:56:49 UTC"
-    }
-  ]
+  "maxHeadsStreak": 0,
+  "maxTailsStreak": 0,
+  "last_toss_timestamp": 1786098000,
+  "history": []
 }
