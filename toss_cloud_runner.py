@@ -33,7 +33,8 @@ def run_cloud_flips():
     last_ts = data.get("last_toss_timestamp", now - 300)
     
     # Calculate seconds passed since last run (e.g., 300 seconds for 5 minutes)
-    seconds_elapsed = max(1, now - last_ts)
+    # Cap at 300 to avoid massive backlogs if timestamp is stale
+    seconds_elapsed = min(300, max(1, now - last_ts))
     
     print(f"Executing {seconds_elapsed} cloud background flips using secrets.randbelow(2)...")
     
