@@ -218,9 +218,9 @@
       const response = await fetch('data.json?t=' + Date.now());
       if (response.ok) {
         const cloudData = await response.json();
-        if (cloudData && typeof cloudData.total === 'number') {
-          // Update state directly from ongoing cloud data
-          const isNewFlip = cloudData.total > state.total;
+        // ONLY override if cloud data is strictly greater than our local ongoing count.
+        // This prevents 5-min stale cache from resetting the 1-second live ticker!
+        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > state.total) {
           state.total = cloudData.total;
           state.heads = cloudData.heads;
           state.tails = cloudData.tails;
@@ -233,7 +233,7 @@
           
           // Render UI with latest cloud flip result
           const latestResult = state.history.length > 0 ? state.history[0].result : null;
-          updateUI(latestResult, isNewFlip);
+          updateUI(latestResult, true);
           return true;
         }
       }
@@ -245,22 +245,24 @@
 
   // Initialize 24/7 Mode state from cloud background runner
   async function initialize247State() {
-    const hasCloud = await fetchCloudData();
-    if (!hasCloud) {
-      // Fallback only if data.json is unavailable
-      const saved = localStorage.getItem('coin_toss_247_state');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          state.total = parsed.total || 0;
-          state.heads = parsed.heads || 0;
-          state.tails = parsed.tails || 0;
+    await fetchCloudData();
+    
+    // Check localStorage to bridge the gap between 5-min cloud cron updates.
+    // If the user refreshes, we don't want the count to jump backwards!
+    const saved = localStorage.getItem('coin_toss_247_state');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.total && typeof parsed.total === 'number' && parsed.total > state.total) {
+          state.total = parsed.total;
+          state.heads = parsed.heads;
+          state.tails = parsed.tails;
           state.currentStreak = parsed.currentStreak || { type: null, count: 0 };
           state.maxHeadsStreak = parsed.maxHeadsStreak || 0;
           state.maxTailsStreak = parsed.maxTailsStreak || 0;
           updateUI(null, false);
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
     }
 
     // Start 5-second periodic cloud polling to sync live background flips
