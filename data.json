@@ -1,0 +1,13 @@
+{
+  "total": 0,
+  "heads": 0,
+  "tails": 0,
+  "currentStreak": {
+    "type": null,
+    "count": 0
+  },
+  "maxHeadsStreak": 0,
+  "maxTailsStreak": 0,
+  "last_toss_timestamp": 0,
+  "history": []
+}
