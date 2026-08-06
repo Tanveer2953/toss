@@ -1,114 +1,13 @@
 {
-  "total": 15731775,
-  "heads": 7863938,
-  "tails": 7867837,
+  "total": 0,
+  "heads": 0,
+  "tails": 0,
   "currentStreak": {
-    "type": "T",
-    "count": 1
+    "type": null,
+    "count": 0
   },
-  "maxHeadsStreak": 23,
-  "maxTailsStreak": 21,
-  "last_toss_timestamp": 1786011475,
-  "history": [
-    {
-      "id": 15731775,
-      "result": "T",
-      "timestamp": "10:17:54 UTC"
-    },
-    {
-      "id": 15731774,
-      "result": "H",
-      "timestamp": "10:17:53 UTC"
-    },
-    {
-      "id": 15731773,
-      "result": "H",
-      "timestamp": "10:17:52 UTC"
-    },
-    {
-      "id": 15731772,
-      "result": "H",
-      "timestamp": "10:17:51 UTC"
-    },
-    {
-      "id": 15731771,
-      "result": "T",
-      "timestamp": "10:17:50 UTC"
-    },
-    {
-      "id": 15731770,
-      "result": "T",
-      "timestamp": "10:17:49 UTC"
-    },
-    {
-      "id": 15731769,
-      "result": "H",
-      "timestamp": "10:17:48 UTC"
-    },
-    {
-      "id": 15731768,
-      "result": "T",
-      "timestamp": "10:17:47 UTC"
-    },
-    {
-      "id": 15731767,
-      "result": "H",
-      "timestamp": "10:17:46 UTC"
-    },
-    {
-      "id": 15731766,
-      "result": "T",
-      "timestamp": "10:17:45 UTC"
-    },
-    {
-      "id": 15731765,
-      "result": "H",
-      "timestamp": "10:17:44 UTC"
-    },
-    {
-      "id": 15731764,
-      "result": "T",
-      "timestamp": "10:17:43 UTC"
-    },
-    {
-      "id": 15731763,
-      "result": "H",
-      "timestamp": "10:17:42 UTC"
-    },
-    {
-      "id": 15731762,
-      "result": "H",
-      "timestamp": "10:17:41 UTC"
-    },
-    {
-      "id": 15731761,
-      "result": "T",
-      "timestamp": "10:17:40 UTC"
-    },
-    {
-      "id": 15731760,
-      "result": "T",
-      "timestamp": "10:17:39 UTC"
-    },
-    {
-      "id": 15731759,
-      "result": "H",
-      "timestamp": "10:17:38 UTC"
-    },
-    {
-      "id": 15731758,
-      "result": "T",
-      "timestamp": "10:17:37 UTC"
-    },
-    {
-      "id": 15731757,
-      "result": "H",
-      "timestamp": "10:17:36 UTC"
-    },
-    {
-      "id": 15731756,
-      "result": "T",
-      "timestamp": "10:17:35 UTC"
-    }
-  ]
+  "maxHeadsStreak": 0,
+  "maxTailsStreak": 0,
+  "last_toss_timestamp": 1786098000,
+  "history": []
 }
