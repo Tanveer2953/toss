@@ -6,10 +6,10 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
-# Prevent concurrent deployment collisions
+# Prevent overlapping coin toss runs
 concurrency:
-  group: "pages-deployment"
-  cancel-in-progress: true
+  group: "coin-toss-runner"
+  cancel-in-progress: false
 
 jobs:
   toss:
@@ -34,4 +34,3 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update 24/7 cloud coin toss data [skip ci]" && git push)
-
