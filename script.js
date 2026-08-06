@@ -218,7 +218,7 @@
       const response = await fetch('data.json?t=' + Date.now());
       if (response.ok) {
         const cloudData = await response.json();
-        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > 0) {
+        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > state.total) {
           state.total = cloudData.total;
           state.heads = cloudData.heads;
           state.tails = cloudData.tails;
@@ -240,16 +240,13 @@
 
   // Fast Batch Sync for 24/7 Mode initialization
   async function initialize247State() {
-    const hasCloud = await fetchCloudData();
-    if (hasCloud) return;
-
     const currentSec = Math.floor(Date.now() / 1000);
     const saved = localStorage.getItem('coin_toss_247_state');
 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.lastSec && parsed.lastSec <= currentSec && typeof parsed.total === 'number') {
+        if (parsed.lastSec && parsed.lastSec <= currentSec && typeof parsed.total === 'number' && parsed.total > 0) {
           state.total = parsed.total;
           state.heads = parsed.heads;
           state.tails = parsed.tails;
@@ -266,18 +263,24 @@
           }
           lastProcessedSec = currentSec;
           saveState();
+          
+          // Optionally merge cloud data if available and higher
+          fetchCloudData();
           return;
         }
       } catch (e) {
-        // Fallback to fresh start
+        // Fallback
       }
     }
 
-    // Fresh start fallback
-    const initialBatch = getTrueCryptoRandomBatch(10);
-    initialBatch.forEach((r, idx) => {
-      recordFlip(r, idx + 1);
-    });
+    // Fresh first start: Try cloud data or seed with initial flips so it never shows 0
+    const hasCloud = await fetchCloudData();
+    if (!hasCloud && state.total === 0) {
+      const initialBatch = getTrueCryptoRandomBatch(15);
+      initialBatch.forEach((r, idx) => {
+        recordFlip(r, idx + 1);
+      });
+    }
 
     lastProcessedSec = currentSec;
     saveState();
@@ -543,25 +546,14 @@
       el.speedContainer.classList.add('hidden');
       el.statusText.textContent = '24/7 LIVE STREAM';
       el.statusPill.style.display = 'flex';
-      
-      resetSessionStats();
     } else {
       el.tabModeCustom.classList.add('active');
       el.tabMode247.classList.remove('active');
       el.speedContainer.classList.remove('hidden');
       el.statusText.textContent = 'CUSTOM SESSION';
-      
-      state.total = 0;
-      state.heads = 0;
-      state.tails = 0;
-      state.currentStreak = { type: null, count: 0 };
-      state.maxHeadsStreak = 0;
-      state.maxTailsStreak = 0;
-      state.history = [];
-      state.chartHistory = [];
-      updateUI(null, false);
     }
 
+    updateUI(null, false);
     startEngine();
   }
 
