@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A 24/7 continuous real-time coin toss simulator with unbiased 50/50 probability, live stats, 3D animations, and zero server or local resource consumption. Hostable for free on GitHub Pages.">
+  <meta name="keywords" content="coin toss, 24/7 coin flip, probability simulator, heads or tails, random number generator, statistics">
+  <meta name="author" content="Continuous Coin Toss">
+  <meta name="theme-color" content="#0B0F19">
+  
+  <title>24/7 Live Coin Toss Simulator | Real-Time Statistics</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Glowing Orbs -->
+  <div class="bg-glow orb-1"></div>
+  <div class="bg-glow orb-2"></div>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">🪙</div>
+        <div>
+          <h1>COIN TOSS <span>24/7</span></h1>
+          <p class="subtitle">Continuous Unbiased Random Probability Simulator</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Live Status Pill -->
+        <div class="status-pill" id="statusPill">
+          <span class="status-dot pulsing"></span>
+          <span id="statusText">24/7 LIVE STREAM</span>
+        </div>
+
+        <!-- Audio Toggle -->
+        <button id="soundToggleBtn" class="icon-btn" title="Toggle Flip Sounds" aria-label="Toggle Flip Sounds">
+          <span id="soundIcon">🔊</span>
+        </button>
+
+        <!-- Help Modal Button -->
+        <button id="infoBtn" class="icon-btn" title="GitHub Pages & How it Works" aria-label="How it Works">
+          ℹ️
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="dashboard-grid">
+      
+      <!-- Left Column: Coin Stage & Main Controls -->
+      <section class="coin-stage-card glass-panel">
+        
+        <!-- Mode Switcher Tabs -->
+        <div class="mode-tabs">
+          <button class="tab-btn active" id="tabMode247">
+            <span class="tab-icon">🌐</span> 24/7 Global UTC Stream
+          </button>
+          <button class="tab-btn" id="tabModeCustom">
+            <span class="tab-icon">⚡</span> Custom Live Session
+          </button>
+        </div>
+
+        <!-- 3D Coin Display Stage -->
+        <div class="coin-viewport">
+          <div class="coin-shadow" id="coinShadow"></div>
+          <div class="coin-3d" id="coin3D">
+            <!-- Front Face (Heads) -->
+            <div class="coin-face coin-front">
+              <div class="coin-ring"></div>
+              <div class="coin-symbol">H</div>
+              <div class="coin-label">HEADS</div>
+            </div>
+            <!-- Back Face (Tails) -->
+            <div class="coin-face coin-back">
+              <div class="coin-ring"></div>
+              <div class="coin-symbol">T</div>
+              <div class="coin-label">TAILS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Result Banner -->
+        <div class="result-banner">
+          <div class="result-badge" id="resultBadge">READY</div>
+          <div class="toss-meta" id="tossMeta">Flip #0 • 1 Toss / Sec</div>
+        </div>
+
+        <!-- Control Action Bar -->
+        <div class="control-bar">
+          <button id="autoTossToggleBtn" class="btn btn-primary">
+            <span id="autoTossIcon">⏸️</span>
+            <span id="autoTossLabel">Pause Stream</span>
+          </button>
+          
+          <button id="manualFlipBtn" class="btn btn-secondary">
+            <span>🪙</span> Manual Toss
+          </button>
+
+          <button id="resetStatsBtn" class="btn btn-ghost" title="Reset Session Counts">
+            <span>🔄</span> Reset
+          </button>
+        </div>
+
+        <!-- Speed Selector (Shown in Custom Mode) -->
+        <div class="speed-selector-container hidden" id="speedContainer">
+          <label for="speedSelect">Interval Speed:</label>
+          <div class="speed-options" id="speedOptions">
+            <button class="speed-btn active" data-speed="1000">1.0s</button>
+            <button class="speed-btn" data-speed="500">0.5s</button>
+            <button class="speed-btn" data-speed="200">0.2s</button>
+            <button class="speed-btn" data-speed="100">0.1s</button>
+            <button class="speed-btn" data-speed="10">TURBO</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Statistics & Analytics Dashboard -->
+      <section class="stats-dashboard">
+        
+        <!-- Primary Stat Cards Grid -->
+        <div class="stats-grid">
+          
+          <!-- Card 1: Total Flips -->
+          <div class="stat-card glass-panel">
+            <div class="stat-header">
+              <span class="stat-icon">📊</span>
+              <span class="stat-title">Total Flips</span>
+            </div>
+            <div class="stat-value highlight-cyan" id="statTotal">0</div>
+            <div class="stat-sub" id="statRate">Rate: 1.00 flip/sec</div>
+          </div>
+
+          <!-- Card 2: Heads Count & % -->
+          <div class="stat-card glass-panel border-heads">
+            <div class="stat-header">
+              <span class="stat-icon">👑</span>
+              <span class="stat-title">Heads (H)</span>
+            </div>
+            <div class="stat-value highlight-gold" id="statHeadsCount">0</div>
+            <div class="stat-percent-badge gold-bg" id="statHeadsPct">50.00%</div>
+          </div>
+
+          <!-- Card 3: Tails Count & % -->
+          <div class="stat-card glass-panel border-tails">
+            <div class="stat-header">
+              <span class="stat-icon">🦅</span>
+              <span class="stat-title">Tails (T)</span>
+            </div>
+            <div class="stat-value highlight-purple" id="statTailsCount">0</div>
+            <div class="stat-percent-badge purple-bg" id="statTailsPct">50.00%</div>
+          </div>
+
+          <!-- Card 4: Streaks -->
+          <div class="stat-card glass-panel">
+            <div class="stat-header">
+              <span class="stat-icon">🔥</span>
+              <span class="stat-title">Current Streak</span>
+            </div>
+            <div class="stat-value" id="statCurrentStreak">0</div>
+            <div class="stat-sub" id="statBestStreaks">Max H: 0 • Max T: 0</div>
+          </div>
+
+        </div>
+
+        <!-- Live Split Probability Visualizer Bar -->
+        <div class="split-card glass-panel">
+          <div class="split-header">
+            <span>PROBABILITY BALANCE</span>
+            <span id="deviationLabel" class="deviation-text">Deviation from 50%: 0.000%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-fill-heads" id="barHeads" style="width: 50%;">
+              <span id="barHeadsText">50.00% H</span>
+            </div>
+            <div class="progress-fill-tails" id="barTails" style="width: 50%;">
+              <span id="barTailsText">50.00% T</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Convergence Chart -->
+        <div class="chart-card glass-panel">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span>📈</span> Convergence to 50% Law of Large Numbers
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="dot heads-dot"></span> Heads %</span>
+              <span class="legend-item"><span class="dot target-dot"></span> 50% Target</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="chartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Recent Flips History Timeline -->
+        <div class="history-card glass-panel">
+          <div class="history-header">
+            <span>📜 Recent Flips Log</span>
+            <span class="history-count" id="historyMeta">Showing last 20 flips</span>
+          </div>
+          <div class="history-stream" id="historyStream">
+            <!-- Dynamic Flip Badges -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Info / GitHub Pages Deployment Modal -->
+    <div class="modal-overlay hidden" id="infoModal">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h3>ℹ️ How it Works & Free GitHub Hosting</h3>
+          <button class="close-btn" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>🌟 Features</h4>
+          <ul>
+            <li><strong>24/7 Continuous Stream:</strong> Every single second UTC corresponds to a real, fair 50/50 coin toss using cryptographically uniform hash PRNG.</li>
+            <li><strong>Zero Resource Drain:</strong> Uses <strong>0% CPU/RAM/Battery</strong> when closed. When you reopen the app, it instantly catches up with 100% genuine precision.</li>
+            <li><strong>Unbiased 50/50 Chances:</strong> Verified against the Law of Large Numbers.</li>
+          </ul>
+
+          <hr class="modal-divider">
+
+          <h4>🚀 How to Host Free on GitHub Pages</h4>
+          <ol>
+            <li>Create a free repository on <a href="https://github.com" target="_blank" rel="noopener">GitHub.com</a> (e.g., <code>coin-toss-247</code>).</li>
+            <li>Upload <code>index.html</code>, <code>styles.css</code>, <code>script.js</code>, and <code>README.md</code> to the repository.</li>
+            <li>Go to <strong>Settings</strong> &rarr; <strong>Pages</strong> &rarr; Select <strong>main branch</strong> &rarr; Click <strong>Save</strong>!</li>
+            <li>Your site will be live instantly at <code>https://yourusername.github.io/coin-toss-247/</code> 100% free forever!</li>
+          </ol>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="modalOkBtn">Got It!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>100% Free & Open Source • Easily Hostable on GitHub Pages • Powered by Cryptographic PRNG</p>
+    </footer>
+
+  </div>
+
+  <!-- JavaScript Engine -->
+  <script src="script.js"></script>
+</body>
+</html>
