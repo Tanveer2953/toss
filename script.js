@@ -218,9 +218,8 @@
       const response = await fetch('data.json?t=' + Date.now());
       if (response.ok) {
         const cloudData = await response.json();
-        // ONLY override if cloud data is strictly greater than our local ongoing count.
-        // This prevents 5-min stale cache from resetting the 1-second live ticker!
-        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > state.total) {
+        // ONLY update if cloud data has changed
+        if (cloudData && typeof cloudData.total === 'number' && cloudData.total !== state.total) {
           state.total = cloudData.total;
           state.heads = cloudData.heads;
           state.tails = cloudData.tails;
@@ -238,7 +237,7 @@
         }
       }
     } catch (err) {
-      // Local preview fallback
+      // Offline fallback
     }
     return false;
   }
@@ -247,24 +246,6 @@
   async function initialize247State() {
     await fetchCloudData();
     
-    // Check localStorage to bridge the gap between 5-min cloud cron updates.
-    // If the user refreshes, we don't want the count to jump backwards!
-    const saved = localStorage.getItem('coin_toss_247_state');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.total && typeof parsed.total === 'number' && parsed.total > state.total) {
-          state.total = parsed.total;
-          state.heads = parsed.heads;
-          state.tails = parsed.tails;
-          state.currentStreak = parsed.currentStreak || { type: null, count: 0 };
-          state.maxHeadsStreak = parsed.maxHeadsStreak || 0;
-          state.maxTailsStreak = parsed.maxTailsStreak || 0;
-          updateUI(null, false);
-        }
-      } catch (e) {}
-    }
-
     // Start 5-second periodic cloud polling to sync live background flips
     if (!window.cloudPollInterval) {
       window.cloudPollInterval = setInterval(fetchCloudData, 5000);
@@ -272,17 +253,7 @@
   }
 
   function saveState() {
-    if (appMode === '247') {
-      localStorage.setItem('coin_toss_247_state', JSON.stringify({
-        lastSec: lastProcessedSec,
-        total: state.total,
-        heads: state.heads,
-        tails: state.tails,
-        maxHeadsStreak: state.maxHeadsStreak,
-        maxTailsStreak: state.maxTailsStreak,
-        currentStreak: state.currentStreak
-      }));
-    }
+    // 24/7 Mode state is entirely managed by the cloud (data.json), so no local saving is needed.
   }
 
   // --- UI Update & Rendering ---
@@ -468,23 +439,6 @@
     ctx.shadowBlur = 0;
   }
 
-  // --- Ticker Engine Loop ---
-  function tick247() {
-    const currentSec = Math.floor(Date.now() / 1000);
-
-    if (currentSec > lastProcessedSec) {
-      // Execute true crypto-random flip for newly arrived second
-      const result = getTrueCryptoRandomFlip();
-      recordFlip(result);
-      lastProcessedSec = currentSec;
-      saveState();
-
-      if (isAutoTossing) {
-        updateUI(result, true);
-      }
-    }
-  }
-
   function tickCustom() {
     if (!isAutoTossing) return;
     const result = getTrueCryptoRandomFlip();
@@ -496,8 +450,8 @@
     if (timerId) clearInterval(timerId);
 
     if (appMode === '247') {
-      // Tick every 200ms to detect UTC second transition instantly
-      timerId = setInterval(tick247, 200);
+      // In 24/7 Mode, no local ticking occurs. 
+      // The 5-second cloud polling interval handles all updates.
     } else {
       timerId = setInterval(tickCustom, intervalSpeed);
     }
