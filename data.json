@@ -1,13 +1,19 @@
 {
-  "total": 0,
-  "heads": 0,
-  "tails": 0,
+  "total": 100,
+  "heads": 50,
+  "tails": 50,
   "currentStreak": {
-    "type": null,
-    "count": 0
+    "type": "H",
+    "count": 2
   },
-  "maxHeadsStreak": 0,
-  "maxTailsStreak": 0,
-  "last_toss_timestamp": 0,
-  "history": []
+  "maxHeadsStreak": 4,
+  "maxTailsStreak": 3,
+  "last_toss_timestamp": 1770279800,
+  "history": [
+    { "id": 100, "result": "H", "timestamp": "13:40:00 UTC" },
+    { "id": 99, "result": "H", "timestamp": "13:39:59 UTC" },
+    { "id": 98, "result": "T", "timestamp": "13:39:58 UTC" },
+    { "id": 97, "result": "H", "timestamp": "13:39:57 UTC" },
+    { "id": 96, "result": "T", "timestamp": "13:39:56 UTC" }
+  ]
 }
