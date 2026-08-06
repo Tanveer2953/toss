@@ -83,30 +83,29 @@
     historyStream: document.getElementById('historyStream')
   };
 
-  // --- Cryptographic Uniform PRNG Engine (Mulberry32) ---
-  function mulberry32(a) {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
-
+  // --- True Non-Deterministic Web Crypto API Engine ---
   /**
-   * Deterministically returns coin result for a specific UTC second index 's'
-   * 0 = Heads ('H'), 1 = Tails ('T')
+   * Generates a 100% true, cryptographically secure non-deterministic coin flip 
+   * using Web Crypto API hardware entropy (window.crypto.getRandomValues).
    */
-  function getResultForSecond(s) {
-    const val = mulberry32(s ^ SEED_SALT);
-    return val < 0.5 ? 'H' : 'T';
-  }
-
-  /**
-   * Cryptographic Crypto API random for manual live flips
-   */
-  function getCryptoRandomFlip() {
+  function getTrueCryptoRandomFlip() {
     const array = new Uint32Array(1);
     window.crypto.getRandomValues(array);
-    return array[0] / (0xffffffff + 1) < 0.5 ? 'H' : 'T';
+    return (array[0] / 4294967296) < 0.5 ? 'H' : 'T';
+  }
+
+  /**
+   * High-speed batch generator of true crypto random flips for missed offline seconds
+   */
+  function getTrueCryptoRandomBatch(count) {
+    const safeCount = Math.min(count, 500000); // Batch up to 500k true randoms at once
+    const array = new Uint32Array(safeCount);
+    window.crypto.getRandomValues(array);
+    const results = [];
+    for (let i = 0; i < safeCount; i++) {
+      results.push((array[i] / 4294967296) < 0.5 ? 'H' : 'T');
+    }
+    return results;
   }
 
   // --- Web Audio API Sound Synthesizer ---
@@ -213,42 +212,72 @@
     }
   }
 
-  // Fast Batch Sync for 24/7 Mode initialization
-  function initialize247State() {
-    const currentSec = Math.floor(Date.now() / 1000);
-    const totalElapsedSec = Math.max(1, currentSec - GENESIS_TIME);
+  // Cloud Background Data Fetcher
+  async function fetchCloudData() {
+    try {
+      const response = await fetch('data.json?t=' + Date.now());
+      if (response.ok) {
+        const cloudData = await response.json();
+        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > 0) {
+          state.total = cloudData.total;
+          state.heads = cloudData.heads;
+          state.tails = cloudData.tails;
+          state.currentStreak = cloudData.currentStreak || { type: null, count: 0 };
+          state.maxHeadsStreak = cloudData.maxHeadsStreak || 0;
+          state.maxTailsStreak = cloudData.maxTailsStreak || 0;
+          if (Array.isArray(cloudData.history) && cloudData.history.length > 0) {
+            state.history = cloudData.history;
+          }
+          updateUI(null, false);
+          return true;
+        }
+      }
+    } catch (err) {
+      // Offline / Local preview fallback
+    }
+    return false;
+  }
 
-    // Fast block simulation or cached recovery
+  // Fast Batch Sync for 24/7 Mode initialization
+  async function initialize247State() {
+    const hasCloud = await fetchCloudData();
+    if (hasCloud) return;
+
+    const currentSec = Math.floor(Date.now() / 1000);
     const saved = localStorage.getItem('coin_toss_247_state');
-    let startSec = GENESIS_TIME;
 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.lastSec && parsed.lastSec <= currentSec && parsed.total) {
+        if (parsed.lastSec && parsed.lastSec <= currentSec && typeof parsed.total === 'number') {
           state.total = parsed.total;
           state.heads = parsed.heads;
           state.tails = parsed.tails;
           state.maxHeadsStreak = parsed.maxHeadsStreak || 0;
           state.maxTailsStreak = parsed.maxTailsStreak || 0;
           state.currentStreak = parsed.currentStreak || { type: null, count: 0 };
-          startSec = parsed.lastSec + 1;
+          
+          const missedCount = currentSec - parsed.lastSec;
+          if (missedCount > 0) {
+            const batchResults = getTrueCryptoRandomBatch(missedCount);
+            batchResults.forEach((r, idx) => {
+              recordFlip(r, parsed.total + idx + 1);
+            });
+          }
+          lastProcessedSec = currentSec;
+          saveState();
+          return;
         }
       } catch (e) {
-        // Fallback to fresh calc
+        // Fallback to fresh start
       }
     }
 
-    // Fast batch process remaining elapsed seconds up to currentSec
-    if (startSec <= currentSec) {
-      // Process in chunks if needed
-      const maxBatch = 50000; // High speed loop
-      const endSec = Math.min(currentSec, startSec + maxBatch);
-      for (let s = startSec; s <= endSec; s++) {
-        const r = getResultForSecond(s);
-        recordFlip(r, s - GENESIS_TIME);
-      }
-    }
+    // Fresh start fallback
+    const initialBatch = getTrueCryptoRandomBatch(10);
+    initialBatch.forEach((r, idx) => {
+      recordFlip(r, idx + 1);
+    });
 
     lastProcessedSec = currentSec;
     saveState();
@@ -456,10 +485,9 @@
     const currentSec = Math.floor(Date.now() / 1000);
 
     if (currentSec > lastProcessedSec) {
-      // Execute flip for newly arrived second
-      const result = getResultForSecond(currentSec);
-      const flipNum = currentSec - GENESIS_TIME;
-      recordFlip(result, flipNum);
+      // Execute true crypto-random flip for newly arrived second
+      const result = getTrueCryptoRandomFlip();
+      recordFlip(result);
       lastProcessedSec = currentSec;
       saveState();
 
@@ -471,7 +499,7 @@
 
   function tickCustom() {
     if (!isAutoTossing) return;
-    const result = getCryptoRandomFlip();
+    const result = getTrueCryptoRandomFlip();
     recordFlip(result);
     updateUI(result, true);
   }
@@ -545,7 +573,7 @@
 
     // Coin 3D Click (Manual Flip)
     el.coin3D.addEventListener('click', () => {
-      const res = appMode === '247' ? getResultForSecond(Math.floor(Date.now() / 1000)) : getCryptoRandomFlip();
+      const res = getTrueCryptoRandomFlip();
       recordFlip(res);
       updateUI(res, true);
     });
@@ -566,7 +594,7 @@
 
     // Manual Flip Button
     el.manualFlipBtn.addEventListener('click', () => {
-      const res = getCryptoRandomFlip();
+      const res = getTrueCryptoRandomFlip();
       recordFlip(res);
       updateUI(res, true);
     });
