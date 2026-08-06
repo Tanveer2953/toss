@@ -212,13 +212,15 @@
     }
   }
 
-  // Cloud Background Data Fetcher
+  // Cloud Background Data Sync (Primary Source of Truth)
   async function fetchCloudData() {
     try {
       const response = await fetch('data.json?t=' + Date.now());
       if (response.ok) {
         const cloudData = await response.json();
-        if (cloudData && typeof cloudData.total === 'number' && cloudData.total > state.total) {
+        if (cloudData && typeof cloudData.total === 'number') {
+          // Update state directly from ongoing cloud data
+          const isNewFlip = cloudData.total > state.total;
           state.total = cloudData.total;
           state.heads = cloudData.heads;
           state.tails = cloudData.tails;
@@ -228,62 +230,43 @@
           if (Array.isArray(cloudData.history) && cloudData.history.length > 0) {
             state.history = cloudData.history;
           }
-          updateUI(null, false);
+          
+          // Render UI with latest cloud flip result
+          const latestResult = state.history.length > 0 ? state.history[0].result : null;
+          updateUI(latestResult, isNewFlip);
           return true;
         }
       }
     } catch (err) {
-      // Offline / Local preview fallback
+      // Local preview fallback
     }
     return false;
   }
 
-  // Fast Batch Sync for 24/7 Mode initialization
+  // Initialize 24/7 Mode state from cloud background runner
   async function initialize247State() {
-    const currentSec = Math.floor(Date.now() / 1000);
-    const saved = localStorage.getItem('coin_toss_247_state');
-
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.lastSec && parsed.lastSec <= currentSec && typeof parsed.total === 'number' && parsed.total > 0) {
-          state.total = parsed.total;
-          state.heads = parsed.heads;
-          state.tails = parsed.tails;
+    const hasCloud = await fetchCloudData();
+    if (!hasCloud) {
+      // Fallback only if data.json is unavailable
+      const saved = localStorage.getItem('coin_toss_247_state');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state.total = parsed.total || 0;
+          state.heads = parsed.heads || 0;
+          state.tails = parsed.tails || 0;
+          state.currentStreak = parsed.currentStreak || { type: null, count: 0 };
           state.maxHeadsStreak = parsed.maxHeadsStreak || 0;
           state.maxTailsStreak = parsed.maxTailsStreak || 0;
-          state.currentStreak = parsed.currentStreak || { type: null, count: 0 };
-          
-          const missedCount = currentSec - parsed.lastSec;
-          if (missedCount > 0) {
-            const batchResults = getTrueCryptoRandomBatch(missedCount);
-            batchResults.forEach((r, idx) => {
-              recordFlip(r, parsed.total + idx + 1);
-            });
-          }
-          lastProcessedSec = currentSec;
-          saveState();
-          
-          // Optionally merge cloud data if available and higher
-          fetchCloudData();
-          return;
-        }
-      } catch (e) {
-        // Fallback
+          updateUI(null, false);
+        } catch (e) {}
       }
     }
 
-    // Fresh first start: Try cloud data or seed with initial flips so it never shows 0
-    const hasCloud = await fetchCloudData();
-    if (!hasCloud && state.total === 0) {
-      const initialBatch = getTrueCryptoRandomBatch(15);
-      initialBatch.forEach((r, idx) => {
-        recordFlip(r, idx + 1);
-      });
+    // Start 5-second periodic cloud polling to sync live background flips
+    if (!window.cloudPollInterval) {
+      window.cloudPollInterval = setInterval(fetchCloudData, 5000);
     }
-
-    lastProcessedSec = currentSec;
-    saveState();
   }
 
   function saveState() {
