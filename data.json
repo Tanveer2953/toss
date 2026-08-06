@@ -1,13 +1,19 @@
 {
-  "total": 0,
-  "heads": 0,
+  "total": 1,
+  "heads": 1,
   "tails": 0,
   "currentStreak": {
-    "type": null,
-    "count": 0
+    "type": "H",
+    "count": 1
   },
-  "maxHeadsStreak": 0,
+  "maxHeadsStreak": 1,
   "maxTailsStreak": 0,
-  "last_toss_timestamp": 1786098000,
-  "history": []
+  "last_toss_timestamp": 1786016258,
+  "history": [
+    {
+      "id": 1,
+      "result": "H",
+      "timestamp": "10:20:00 UTC"
+    }
+  ]
 }
