@@ -1,24 +1,25 @@
 /**
- * 24/7 CONTINUOUS COIN TOSS ENGINE
- * Cryptographically Uniform Time-Seeded & Live Session Simulator
+ * 24/7 CLOUD COIN TOSS VIEWER
+ * Pure cloud data display — all flips happen on GitHub Actions servers.
+ * This frontend only fetches and renders the results.
  */
 
 (function () {
   'use strict';
 
-  // --- Constants & Global Genesis Seed ---
-  const GENESIS_TIME = 1770000000; // Fixed UTC origin (Seconds)
-  const SEED_SALT = 0x9E3779B9;    // Golden ratio 32-bit constant
+  // --- Cloud Data Source ---
+  // Fetches directly from GitHub's raw content servers, bypassing Pages cache entirely.
+  const CLOUD_DATA_URL = 'https://raw.githubusercontent.com/Tanveer2953/toss/main/data.json';
+  const POLL_INTERVAL_MS = 10000; // Poll every 10 seconds
 
-  // --- State Variables ---
+  // --- State ---
   let appMode = '247'; // '247' or 'custom'
   let isAutoTossing = true;
-  let intervalSpeed = 1000; // ms
+  let intervalSpeed = 1000;
   let isMuted = false;
   let timerId = null;
-  let lastProcessedSec = 0;
+  let pollTimerId = null;
 
-  // Statistics State
   const state = {
     total: 0,
     heads: 0,
@@ -26,13 +27,12 @@
     currentStreak: { type: null, count: 0 },
     maxHeadsStreak: 0,
     maxTailsStreak: 0,
-    history: [], // Recent flip badges [{ id, result, timestamp }]
-    chartHistory: [] // Historical points [{ flipNum, headsPct }]
+    history: [],
+    chartHistory: []
   };
 
-  // Cache DOM Elements
+  // --- Cache DOM ---
   const el = {
-    // Buttons & Header
     statusPill: document.getElementById('statusPill'),
     statusText: document.getElementById('statusText'),
     soundToggleBtn: document.getElementById('soundToggleBtn'),
@@ -42,17 +42,14 @@
     closeModalBtn: document.getElementById('closeModalBtn'),
     modalOkBtn: document.getElementById('modalOkBtn'),
 
-    // Tabs
     tabMode247: document.getElementById('tabMode247'),
     tabModeCustom: document.getElementById('tabModeCustom'),
 
-    // 3D Coin & Banner
     coin3D: document.getElementById('coin3D'),
     coinShadow: document.getElementById('coinShadow'),
     resultBadge: document.getElementById('resultBadge'),
     tossMeta: document.getElementById('tossMeta'),
 
-    // Controls
     autoTossToggleBtn: document.getElementById('autoTossToggleBtn'),
     autoTossIcon: document.getElementById('autoTossIcon'),
     autoTossLabel: document.getElementById('autoTossLabel'),
@@ -61,7 +58,6 @@
     speedContainer: document.getElementById('speedContainer'),
     speedOptions: document.getElementById('speedOptions'),
 
-    // Stats Displays
     statTotal: document.getElementById('statTotal'),
     statRate: document.getElementById('statRate'),
     statHeadsCount: document.getElementById('statHeadsCount'),
@@ -71,52 +67,23 @@
     statCurrentStreak: document.getElementById('statCurrentStreak'),
     statBestStreaks: document.getElementById('statBestStreaks'),
 
-    // Progress Split
     deviationLabel: document.getElementById('deviationLabel'),
     barHeads: document.getElementById('barHeads'),
     barHeadsText: document.getElementById('barHeadsText'),
     barTails: document.getElementById('barTails'),
     barTailsText: document.getElementById('barTailsText'),
 
-    // Chart & Log
     chartCanvas: document.getElementById('chartCanvas'),
     historyStream: document.getElementById('historyStream')
   };
 
-  // --- True Non-Deterministic Web Crypto API Engine ---
-  /**
-   * Generates a 100% true, cryptographically secure non-deterministic coin flip 
-   * using Web Crypto API hardware entropy (window.crypto.getRandomValues).
-   */
-  function getTrueCryptoRandomFlip() {
-    const array = new Uint32Array(1);
-    window.crypto.getRandomValues(array);
-    return (array[0] / 4294967296) < 0.5 ? 'H' : 'T';
-  }
-
-  /**
-   * High-speed batch generator of true crypto random flips for missed offline seconds
-   */
-  function getTrueCryptoRandomBatch(count) {
-    const safeCount = Math.min(count, 500000); // Batch up to 500k true randoms at once
-    const array = new Uint32Array(safeCount);
-    window.crypto.getRandomValues(array);
-    const results = [];
-    for (let i = 0; i < safeCount; i++) {
-      results.push((array[i] / 4294967296) < 0.5 ? 'H' : 'T');
-    }
-    return results;
-  }
-
-  // --- Web Audio API Sound Synthesizer ---
+  // --- Web Audio Sound ---
   let audioCtx = null;
 
   function initAudio() {
     if (!audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        audioCtx = new AudioContext();
-      }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
     }
   }
 
@@ -125,143 +92,96 @@
     try {
       initAudio();
       if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
 
       const now = audioCtx.currentTime;
-
-      // 1. Spin Whistle
       const osc1 = audioCtx.createOscillator();
       const gain1 = audioCtx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(300, now);
       osc1.frequency.exponentialRampToValueAtTime(result === 'H' ? 700 : 550, now + 0.15);
-
       gain1.gain.setValueAtTime(0.08, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
       osc1.connect(gain1);
       gain1.connect(audioCtx.destination);
       osc1.start(now);
       osc1.stop(now + 0.15);
 
-      // 2. Metallic Catch Chime
       setTimeout(() => {
         if (!audioCtx) return;
-        const chimeNow = audioCtx.currentTime;
+        const t = audioCtx.currentTime;
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
-
         osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(result === 'H' ? 1200 : 850, chimeNow);
-        osc2.frequency.exponentialRampToValueAtTime(result === 'H' ? 1600 : 600, chimeNow + 0.1);
-
-        gain2.gain.setValueAtTime(0.12, chimeNow);
-        gain2.gain.exponentialRampToValueAtTime(0.001, chimeNow + 0.2);
-
+        osc2.frequency.setValueAtTime(result === 'H' ? 1200 : 850, t);
+        osc2.frequency.exponentialRampToValueAtTime(result === 'H' ? 1600 : 600, t + 0.1);
+        gain2.gain.setValueAtTime(0.12, t);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
         osc2.connect(gain2);
         gain2.connect(audioCtx.destination);
-        osc2.start(chimeNow);
-        osc2.stop(chimeNow + 0.2);
+        osc2.start(t);
+        osc2.stop(t + 0.2);
       }, 150);
-    } catch (e) {
-      // Audio autoplay blocked or unsupported
-    }
+    } catch (e) { /* audio blocked */ }
   }
 
-  // --- Statistics Calculation & State Updates ---
-  function recordFlip(result, flipId) {
-    state.total++;
-    if (result === 'H') {
-      state.heads++;
-    } else {
-      state.tails++;
-    }
-
-    // Streaks
-    if (state.currentStreak.type === result) {
-      state.currentStreak.count++;
-    } else {
-      state.currentStreak.type = result;
-      state.currentStreak.count = 1;
-    }
-
-    if (result === 'H' && state.currentStreak.count > state.maxHeadsStreak) {
-      state.maxHeadsStreak = state.currentStreak.count;
-    }
-    if (result === 'T' && state.currentStreak.count > state.maxTailsStreak) {
-      state.maxTailsStreak = state.currentStreak.count;
-    }
-
-    // Recent History Stream (Keep last 25)
-    state.history.unshift({
-      id: flipId || state.total,
-      result: result,
-      timestamp: new Date().toLocaleTimeString()
-    });
-    if (state.history.length > 25) {
-      state.history.pop();
-    }
-
-    // Chart Point Data (Keep last 50 points)
-    const headsPct = (state.heads / state.total) * 100;
-    state.chartHistory.push({ flipNum: state.total, headsPct: headsPct });
-    if (state.chartHistory.length > 50) {
-      state.chartHistory.shift();
-    }
-  }
-
-  // Cloud Background Data Sync (Primary Source of Truth)
+  // --- Cloud Data Fetch (Single Source of Truth) ---
   async function fetchCloudData() {
     try {
-      const response = await fetch('data.json?t=' + Date.now());
-      if (response.ok) {
-        const cloudData = await response.json();
-        // ONLY update if cloud data has changed
-        if (cloudData && typeof cloudData.total === 'number' && cloudData.total !== state.total) {
-          state.total = cloudData.total;
-          state.heads = cloudData.heads;
-          state.tails = cloudData.tails;
-          state.currentStreak = cloudData.currentStreak || { type: null, count: 0 };
-          state.maxHeadsStreak = cloudData.maxHeadsStreak || 0;
-          state.maxTailsStreak = cloudData.maxTailsStreak || 0;
-          if (Array.isArray(cloudData.history) && cloudData.history.length > 0) {
-            state.history = cloudData.history;
-          }
-          
-          // Render UI with latest cloud flip result
-          const latestResult = state.history.length > 0 ? state.history[0].result : null;
-          updateUI(latestResult, true);
-          return true;
-        }
+      const response = await fetch(CLOUD_DATA_URL + '?t=' + Date.now());
+      if (!response.ok) return false;
+
+      const cloud = await response.json();
+      if (!cloud || typeof cloud.total !== 'number') return false;
+
+      // Only update UI when data has actually changed
+      const changed = cloud.total !== state.total;
+
+      state.total = cloud.total;
+      state.heads = cloud.heads;
+      state.tails = cloud.tails;
+      state.currentStreak = cloud.currentStreak || { type: null, count: 0 };
+      state.maxHeadsStreak = cloud.maxHeadsStreak || 0;
+      state.maxTailsStreak = cloud.maxTailsStreak || 0;
+
+      if (Array.isArray(cloud.history) && cloud.history.length > 0) {
+        state.history = cloud.history;
       }
+
+      // Build chart point from current data
+      if (state.total > 0) {
+        const headsPct = (state.heads / state.total) * 100;
+        state.chartHistory.push({ flipNum: state.total, headsPct });
+        if (state.chartHistory.length > 50) state.chartHistory.shift();
+      }
+
+      const latestResult = state.history.length > 0 ? state.history[0].result : null;
+      updateUI(latestResult, changed);
+      return true;
     } catch (err) {
-      // Offline fallback
-    }
-    return false;
-  }
-
-  // Initialize 24/7 Mode state from cloud background runner
-  async function initialize247State() {
-    await fetchCloudData();
-    
-    // Start 5-second periodic cloud polling to sync live background flips
-    if (!window.cloudPollInterval) {
-      window.cloudPollInterval = setInterval(fetchCloudData, 5000);
+      console.warn('Cloud fetch failed, will retry:', err.message);
+      return false;
     }
   }
 
-  function saveState() {
-    // 24/7 Mode state is entirely managed by the cloud (data.json), so no local saving is needed.
+  function startCloudPolling() {
+    if (pollTimerId) clearInterval(pollTimerId);
+    pollTimerId = setInterval(fetchCloudData, POLL_INTERVAL_MS);
   }
 
-  // --- UI Update & Rendering ---
+  function stopCloudPolling() {
+    if (pollTimerId) {
+      clearInterval(pollTimerId);
+      pollTimerId = null;
+    }
+  }
+
+  // --- UI Rendering ---
   function updateUI(latestResult, isAnimated = true) {
-    // 1. Coin 3D Visual & Result Badge
+    // 1. Coin Animation
     if (latestResult && isAnimated) {
       el.coin3D.classList.remove('flipping-heads', 'flipping-tails');
-      void el.coin3D.offsetWidth; // Force reflow
+      void el.coin3D.offsetWidth;
 
       if (latestResult === 'H') {
         el.coin3D.classList.add('flipping-heads');
@@ -272,7 +192,6 @@
         el.resultBadge.textContent = 'TAILS';
         el.resultBadge.className = 'result-badge tails';
       }
-
       playFlipSound(latestResult);
     }
 
@@ -286,7 +205,7 @@
 
     // 3. Stats Cards
     el.statTotal.textContent = state.total.toLocaleString();
-    
+
     const headsPct = state.total > 0 ? (state.heads / state.total) * 100 : 50;
     const tailsPct = state.total > 0 ? (state.tails / state.total) * 100 : 50;
 
@@ -298,8 +217,8 @@
 
     // Streaks
     if (state.currentStreak.type) {
-      const streakLabel = state.currentStreak.type === 'H' ? 'Heads' : 'Tails';
-      el.statCurrentStreak.textContent = `${state.currentStreak.count} ${streakLabel}`;
+      const label = state.currentStreak.type === 'H' ? 'Heads' : 'Tails';
+      el.statCurrentStreak.textContent = `${state.currentStreak.count} ${label}`;
       el.statCurrentStreak.className = `stat-value ${state.currentStreak.type === 'H' ? 'highlight-gold' : 'highlight-purple'}`;
     } else {
       el.statCurrentStreak.textContent = '0';
@@ -310,16 +229,16 @@
     // 4. Probability Balance Bar
     const dev = Math.abs(50 - headsPct);
     el.deviationLabel.textContent = `Deviation from 50%: ${dev.toFixed(3)}%`;
-    
+
     el.barHeads.style.width = `${headsPct}%`;
     el.barHeadsText.textContent = `${headsPct.toFixed(2)}% H`;
     el.barTails.style.width = `${tailsPct}%`;
     el.barTailsText.textContent = `${tailsPct.toFixed(2)}% T`;
 
-    // 5. History Stream Badges
+    // 5. History Stream
     renderHistoryStream();
 
-    // 6. Canvas Chart
+    // 6. Chart
     renderChart();
   }
 
@@ -336,13 +255,12 @@
     });
   }
 
-  // --- Canvas Convergence Chart Renderer ---
+  // --- Canvas Chart ---
   function renderChart() {
     const canvas = el.chartCanvas;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    // Handle High DPI displays
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
@@ -352,15 +270,13 @@
     const width = rect.width;
     const height = rect.height;
 
-    // Clear
     ctx.clearRect(0, 0, width, height);
 
     if (state.chartHistory.length < 2) {
-      // Empty Chart Placeholder
       ctx.fillStyle = '#6B7280';
       ctx.font = '12px Outfit, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Collecting data points for convergence graph...', width / 2, height / 2);
+      ctx.fillText('Waiting for cloud data points...', width / 2, height / 2);
       return;
     }
 
@@ -368,15 +284,13 @@
     const graphW = width - padding.left - padding.right;
     const graphH = height - padding.top - padding.bottom;
 
-    // Y Axis Range around 50% (e.g. 40% to 60% or dynamic)
-    let minPct = 40;
-    let maxPct = 60;
+    let minPct = 40, maxPct = 60;
     state.chartHistory.forEach(p => {
       if (p.headsPct < minPct) minPct = Math.max(0, p.headsPct - 2);
       if (p.headsPct > maxPct) maxPct = Math.min(100, p.headsPct + 2);
     });
 
-    // Draw Target 50% Line
+    // 50% target line
     const y50 = padding.top + graphH - ((50 - minPct) / (maxPct - minPct)) * graphH;
     ctx.beginPath();
     ctx.setLineDash([4, 4]);
@@ -387,13 +301,12 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Label for 50%
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.font = '10px JetBrains Mono';
     ctx.textAlign = 'right';
     ctx.fillText('50.0%', padding.left - 6, y50 + 3);
 
-    // Plot Points Line
+    // Data line
     ctx.beginPath();
     ctx.strokeStyle = '#00F2FE';
     ctx.lineWidth = 2.5;
@@ -404,15 +317,12 @@
     points.forEach((p, idx) => {
       const x = padding.left + idx * stepX;
       const y = padding.top + graphH - ((p.headsPct - minPct) / (maxPct - minPct)) * graphH;
-      if (idx === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // Area Fill Gradient under line
+    // Area fill
     const firstX = padding.left;
     const lastX = padding.left + (points.length - 1) * stepX;
     ctx.lineTo(lastX, padding.top + graphH);
@@ -425,11 +335,11 @@
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw End Point Dot
+    // End dot
     const lastPt = points[points.length - 1];
     const endX = lastX;
     const endY = padding.top + graphH - ((lastPt.headsPct - minPct) / (maxPct - minPct)) * graphH;
-    
+
     ctx.beginPath();
     ctx.arc(endX, endY, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#00F2FE';
@@ -439,6 +349,44 @@
     ctx.shadowBlur = 0;
   }
 
+  // --- Custom Mode Local Ticking (only for 'custom' mode) ---
+  function getTrueCryptoRandomFlip() {
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return (array[0] / 4294967296) < 0.5 ? 'H' : 'T';
+  }
+
+  function recordFlip(result) {
+    state.total++;
+    if (result === 'H') state.heads++;
+    else state.tails++;
+
+    if (state.currentStreak.type === result) {
+      state.currentStreak.count++;
+    } else {
+      state.currentStreak.type = result;
+      state.currentStreak.count = 1;
+    }
+
+    if (result === 'H' && state.currentStreak.count > state.maxHeadsStreak) {
+      state.maxHeadsStreak = state.currentStreak.count;
+    }
+    if (result === 'T' && state.currentStreak.count > state.maxTailsStreak) {
+      state.maxTailsStreak = state.currentStreak.count;
+    }
+
+    state.history.unshift({
+      id: state.total,
+      result: result,
+      timestamp: new Date().toLocaleTimeString()
+    });
+    if (state.history.length > 25) state.history.pop();
+
+    const headsPct = (state.heads / state.total) * 100;
+    state.chartHistory.push({ flipNum: state.total, headsPct });
+    if (state.chartHistory.length > 50) state.chartHistory.shift();
+  }
+
   function tickCustom() {
     if (!isAutoTossing) return;
     const result = getTrueCryptoRandomFlip();
@@ -446,18 +394,22 @@
     updateUI(result, true);
   }
 
+  // --- Engine ---
   function startEngine() {
     if (timerId) clearInterval(timerId);
+    timerId = null;
 
     if (appMode === '247') {
-      // In 24/7 Mode, no local ticking occurs. 
-      // The 5-second cloud polling interval handles all updates.
+      // 24/7 mode: only cloud polling, no local flipping
+      startCloudPolling();
     } else {
+      // Custom mode: local flipping, stop cloud polling
+      stopCloudPolling();
       timerId = setInterval(tickCustom, intervalSpeed);
     }
   }
 
-  // --- Reset & Mode Switching ---
+  // --- Mode Switching ---
   function resetSessionStats() {
     state.total = 0;
     state.heads = 0;
@@ -469,8 +421,7 @@
     state.chartHistory = [];
 
     if (appMode === '247') {
-      localStorage.removeItem('coin_toss_247_state');
-      initialize247State();
+      fetchCloudData();
     }
     updateUI(null, false);
   }
@@ -479,11 +430,21 @@
     if (appMode === newMode) return;
     appMode = newMode;
 
+    // Reset state when switching modes
+    state.total = 0;
+    state.heads = 0;
+    state.tails = 0;
+    state.currentStreak = { type: null, count: 0 };
+    state.maxHeadsStreak = 0;
+    state.maxTailsStreak = 0;
+    state.history = [];
+    state.chartHistory = [];
+
     if (newMode === '247') {
       el.tabMode247.classList.add('active');
       el.tabModeCustom.classList.remove('active');
       el.speedContainer.classList.add('hidden');
-      el.statusText.textContent = '24/7 LIVE STREAM';
+      el.statusText.textContent = '24/7 CLOUD STREAM';
       el.statusPill.style.display = 'flex';
     } else {
       el.tabModeCustom.classList.add('active');
@@ -496,20 +457,19 @@
     startEngine();
   }
 
-  // --- Event Listeners Setup ---
+  // --- Event Listeners ---
   function setupEventListeners() {
-    // Mode Switch Tabs
     el.tabMode247.addEventListener('click', () => switchMode('247'));
     el.tabModeCustom.addEventListener('click', () => switchMode('custom'));
 
-    // Coin 3D Click (Manual Flip)
     el.coin3D.addEventListener('click', () => {
-      const res = getTrueCryptoRandomFlip();
-      recordFlip(res);
-      updateUI(res, true);
+      if (appMode === 'custom') {
+        const res = getTrueCryptoRandomFlip();
+        recordFlip(res);
+        updateUI(res, true);
+      }
     });
 
-    // Auto-Toss Play/Pause
     el.autoTossToggleBtn.addEventListener('click', () => {
       isAutoTossing = !isAutoTossing;
       if (isAutoTossing) {
@@ -523,39 +483,34 @@
       }
     });
 
-    // Manual Flip Button
     el.manualFlipBtn.addEventListener('click', () => {
-      const res = getTrueCryptoRandomFlip();
-      recordFlip(res);
-      updateUI(res, true);
+      if (appMode === 'custom') {
+        const res = getTrueCryptoRandomFlip();
+        recordFlip(res);
+        updateUI(res, true);
+      }
     });
 
-    // Reset Button
     el.resetStatsBtn.addEventListener('click', () => {
       if (confirm('Reset all toss counts and streak records?')) {
         resetSessionStats();
       }
     });
 
-    // Speed Selector Buttons
     el.speedOptions.addEventListener('click', (e) => {
       const btn = e.target.closest('.speed-btn');
       if (!btn) return;
       document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       intervalSpeed = parseInt(btn.getAttribute('data-speed'), 10);
-      if (appMode === 'custom') {
-        startEngine();
-      }
+      if (appMode === 'custom') startEngine();
     });
 
-    // Sound Toggle Button
     el.soundToggleBtn.addEventListener('click', () => {
       isMuted = !isMuted;
       el.soundIcon.textContent = isMuted ? '🔇' : '🔊';
     });
 
-    // Modal Handlers
     el.infoBtn.addEventListener('click', () => el.infoModal.classList.remove('hidden'));
     el.closeModalBtn.addEventListener('click', () => el.infoModal.classList.add('hidden'));
     el.modalOkBtn.addEventListener('click', () => el.infoModal.classList.add('hidden'));
@@ -563,19 +518,21 @@
       if (e.target === el.infoModal) el.infoModal.classList.add('hidden');
     });
 
-    // Responsive Canvas Resize
     window.addEventListener('resize', () => renderChart());
   }
 
-  // --- Initialization ---
-  function init() {
+  // --- Init ---
+  async function init() {
     setupEventListeners();
-    initialize247State();
     updateUI(null, false);
+
+    // Load cloud data immediately on page open
+    await fetchCloudData();
+
+    // Start the engine (cloud polling for 24/7, local tick for custom)
     startEngine();
   }
 
-  // Run on DOM Ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
