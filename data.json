@@ -1,114 +1,114 @@
 {
-  "total": 1418553,
-  "heads": 708627,
-  "tails": 709926,
+  "total": 1419429,
+  "heads": 709063,
+  "tails": 710366,
   "currentStreak": {
     "type": "T",
     "count": 1
   },
   "maxHeadsStreak": 19,
   "maxTailsStreak": 18,
-  "last_toss_timestamp": 1787434810,
+  "last_toss_timestamp": 1787435686,
   "history": [
     {
-      "id": 1418553,
+      "id": 1419429,
       "result": "T",
-      "timestamp": "21:40:09 UTC"
+      "timestamp": "21:54:45 UTC"
     },
     {
-      "id": 1418552,
+      "id": 1419428,
       "result": "H",
-      "timestamp": "21:40:08 UTC"
+      "timestamp": "21:54:44 UTC"
     },
     {
-      "id": 1418551,
+      "id": 1419427,
+      "result": "T",
+      "timestamp": "21:54:43 UTC"
+    },
+    {
+      "id": 1419426,
       "result": "H",
-      "timestamp": "21:40:07 UTC"
+      "timestamp": "21:54:42 UTC"
     },
     {
-      "id": 1418550,
-      "result": "T",
-      "timestamp": "21:40:06 UTC"
-    },
-    {
-      "id": 1418549,
+      "id": 1419425,
       "result": "H",
-      "timestamp": "21:40:05 UTC"
+      "timestamp": "21:54:41 UTC"
     },
     {
-      "id": 1418548,
+      "id": 1419424,
+      "result": "T",
+      "timestamp": "21:54:40 UTC"
+    },
+    {
+      "id": 1419423,
+      "result": "T",
+      "timestamp": "21:54:39 UTC"
+    },
+    {
+      "id": 1419422,
       "result": "H",
-      "timestamp": "21:40:04 UTC"
+      "timestamp": "21:54:38 UTC"
     },
     {
-      "id": 1418547,
-      "result": "T",
-      "timestamp": "21:40:03 UTC"
-    },
-    {
-      "id": 1418546,
-      "result": "T",
-      "timestamp": "21:40:02 UTC"
-    },
-    {
-      "id": 1418545,
-      "result": "T",
-      "timestamp": "21:40:01 UTC"
-    },
-    {
-      "id": 1418544,
-      "result": "T",
-      "timestamp": "21:40:00 UTC"
-    },
-    {
-      "id": 1418543,
-      "result": "T",
-      "timestamp": "21:39:59 UTC"
-    },
-    {
-      "id": 1418542,
-      "result": "T",
-      "timestamp": "21:39:58 UTC"
-    },
-    {
-      "id": 1418541,
-      "result": "T",
-      "timestamp": "21:39:57 UTC"
-    },
-    {
-      "id": 1418540,
-      "result": "T",
-      "timestamp": "21:39:56 UTC"
-    },
-    {
-      "id": 1418539,
+      "id": 1419421,
       "result": "H",
-      "timestamp": "21:39:55 UTC"
+      "timestamp": "21:54:37 UTC"
     },
     {
-      "id": 1418538,
-      "result": "T",
-      "timestamp": "21:39:54 UTC"
+      "id": 1419420,
+      "result": "H",
+      "timestamp": "21:54:36 UTC"
     },
     {
-      "id": 1418537,
+      "id": 1419419,
       "result": "T",
-      "timestamp": "21:39:53 UTC"
+      "timestamp": "21:54:35 UTC"
     },
     {
-      "id": 1418536,
+      "id": 1419418,
       "result": "T",
-      "timestamp": "21:39:52 UTC"
+      "timestamp": "21:54:34 UTC"
     },
     {
-      "id": 1418535,
-      "result": "T",
-      "timestamp": "21:39:51 UTC"
+      "id": 1419417,
+      "result": "H",
+      "timestamp": "21:54:33 UTC"
     },
     {
-      "id": 1418534,
+      "id": 1419416,
+      "result": "H",
+      "timestamp": "21:54:32 UTC"
+    },
+    {
+      "id": 1419415,
+      "result": "H",
+      "timestamp": "21:54:31 UTC"
+    },
+    {
+      "id": 1419414,
+      "result": "H",
+      "timestamp": "21:54:30 UTC"
+    },
+    {
+      "id": 1419413,
+      "result": "H",
+      "timestamp": "21:54:29 UTC"
+    },
+    {
+      "id": 1419412,
+      "result": "H",
+      "timestamp": "21:54:28 UTC"
+    },
+    {
+      "id": 1419411,
       "result": "T",
-      "timestamp": "21:39:50 UTC"
+      "timestamp": "21:54:27 UTC"
+    },
+    {
+      "id": 1419410,
+      "result": "H",
+      "timestamp": "21:54:26 UTC"
     }
   ]
 }
